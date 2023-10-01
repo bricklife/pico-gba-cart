@@ -6,8 +6,13 @@
 #include <seven/prelude.h>
 #include <seven/hw/video.h>
 #include <seven/hw/video/bg_bitmap.h>
+#include <seven/hw/waitstate.h>
 
 int main() {
+    // values used by official software (according to gbatek)
+    // (default would be 4/2)
+    REG_WAITCNT = WAIT_ROM_N_3 | WAIT_ROM_S_1 | WAIT_PREFETCH_ENABLE;
+
     REG_DISPCNT = VIDEO_MODE_BITMAP | VIDEO_BG2_ENABLE;
 
     for(int y = 0; y < 16; y++) {
