@@ -1,0 +1,6 @@
+{
+    "cmake.configureSettings":
+    {
+        "PICO_SDK_PATH": "${env:HOME}/repos/pico/pico-sdk",
+    }
+}
