@@ -9,7 +9,9 @@
 #include "hardware/vreg.h"
 
 #include "gba-cart.pio.h"
-#include "test-rom.h"
+
+extern char _binary_gba_rom_gba_start[];
+static auto rom_ptr = _binary_gba_rom_gba_start;
 
 static constexpr uint32_t romAddrMask = 0x7FFFFF; // missing a bit
 static constexpr uint32_t romDataMask = 0xFFFF;
@@ -28,7 +30,7 @@ static constexpr int rom_read_dma_channel = 0;
 static int rom_addr_dma_channel, rom_addr_sniff_dma_channel;
 
 static void __not_in_flash_func(dma_irq_handler)() {
-    dma_sniffer_set_data_accumulator((uint32_t)test_rom);
+    dma_sniffer_set_data_accumulator((uint32_t)rom_ptr);
     dma_channel_acknowledge_irq0(rom_addr_dma_channel);
 }
 
@@ -90,7 +92,7 @@ static void dma_init() {
     auto config = dma_channel_get_default_config(rom_read_dma_channel);
     channel_config_set_transfer_data_size(&config, DMA_SIZE_16);
     channel_config_set_dreq(&config, pio_get_dreq(gba_cart_pio, rom_rd_sm, true));
-    dma_channel_configure(rom_read_dma_channel, &config, &gba_cart_pio->txf[rom_rd_sm], test_rom, 0x10000, false);
+    dma_channel_configure(rom_read_dma_channel, &config, &gba_cart_pio->txf[rom_rd_sm], rom_ptr, 0x10000, false);
 
     // address
     // destination isn't actually used
@@ -114,7 +116,7 @@ static void dma_init() {
 
     // sniffer
     dma_sniffer_enable(rom_addr_dma_channel, 0xF/*addition*/, true);
-    dma_sniffer_set_data_accumulator((uint32_t)test_rom);
+    dma_sniffer_set_data_accumulator((uint32_t)rom_ptr);
 
     // irq to reset sniff
     dma_channel_set_irq0_enabled(rom_addr_dma_channel, true);

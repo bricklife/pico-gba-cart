@@ -11,10 +11,31 @@ project(pico-gba-cart C CXX)
 # Initialise the Pico SDK
 pico_sdk_init()
 
+# build gba ROM
+include(ExternalProject)
+ExternalProject_Add(gba-rom-build
+    PREFIX gba
+    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/gba
+    BINARY_DIR ${CMAKE_BINARY_DIR}/gba
+
+    CMAKE_ARGS "-DCMAKE_TOOLCHAIN_FILE=${GBA_TOOLCHAIN_FILE}"
+    BUILD_ALWAYS TRUE
+
+    INSTALL_COMMAND ""
+)
+
+add_custom_command(
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/gba/
+    OUTPUT gba-rom.o
+    COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-littlearm -B armv6s-m gba-rom.gba ${CMAKE_BINARY_DIR}/gba-rom.o
+    DEPENDS gba-rom-build
+)
+
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(pico-gba-cart
     main.cpp
+    gba-rom.o
 )
 
 pico_set_program_name(pico-gba-cart "pico-gba-cart")
