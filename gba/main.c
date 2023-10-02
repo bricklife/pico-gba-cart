@@ -6,6 +6,7 @@
 #include <seven/prelude.h>
 #include <seven/hw/video.h>
 #include <seven/hw/video/bg_bitmap.h>
+#include <seven/hw/video/bg_transform.h>
 #include <seven/hw/waitstate.h>
 
 int main() {
@@ -28,6 +29,8 @@ int main() {
             MODE3_FRAME[y + 80][x] = v << 5 | v << 10;
 
             MODE3_FRAME[y + 96][x] = v | v << 5 | v << 10;
+
+            MODE3_FRAME[y + 112][x] = 0x7FFF;
         }
     }
 
@@ -36,7 +39,17 @@ int main() {
     irqEnable(IRQ_VBLANK);
     REG_DISPSTAT = LCD_VBLANK_IRQ_ENABLE;
 
+    // do some scrolling so I can see if it died
+    int off = 0;
+    int d = 1;
     while(true) {
+        REG_BG2X = off << 8;
+        off += d;
+        if(off > 100)
+            d = -1;
+        else if(off < -100)
+            d = 1;
+
         biosVBlankIntrWait();
     }
 }
