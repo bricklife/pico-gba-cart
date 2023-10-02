@@ -3,28 +3,28 @@
 ; reads address when ROM CS goes low
 ; assumes CS = GPIO 26
 .wrap_target
-    wait 0 pin 26
+    wait 0 pin 26 [8]
 
     in pins, 24
     in null, 1
 
     wait 1 pin 26
-    irq set 0 [14]
+    irq set 0 [7]
 .wrap
 
 ; switches pins to output and writes data when RD goes low
 .program gba_rom_rd
 .wrap_target
     wait 0 pin 26 ; wait for CS
-    mov osr, ~null
     wait 0 pin 27 ; wait for RD
 
-    ; set output
-    out pindirs, 16
-    
     ; data
     pull
     out pins, 16
+
+    ; set output
+    mov osr, ~null
+    out pindirs, 16
 
     wait 1 pin 27
 
