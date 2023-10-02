@@ -14,5 +14,6 @@ set_target_properties(gba-rom PROPERTIES SUFFIX ".elf")
 target_compile_options(gba-rom PRIVATE -ffunction-sections -fdata-sections -mthumb)
 target_include_directories(gba-rom PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../)
 target_link_libraries(gba-rom PRIVATE rom seven)
+target_link_options(gba-rom PRIVATE -Wl,--gc-sections)
 
 gba_target_objcopy(gba-rom FIX_HEADER)
