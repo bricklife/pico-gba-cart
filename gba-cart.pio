@@ -8,19 +8,18 @@
     in pins, 24
     in null, 1
 
-PUBLIC wait_high:
     wait 1 pin 26
-    irq wait 0
+    irq set 0 [14]
 .wrap
 
 ; switches pins to output and writes data when RD goes low
 .program gba_rom_rd
 .wrap_target
     wait 0 pin 26 ; wait for CS
+    mov osr, ~null
     wait 0 pin 27 ; wait for RD
 
     ; set output
-    mov osr, ~null
     out pindirs, 16
     
     ; data
@@ -30,6 +29,6 @@ PUBLIC wait_high:
     wait 1 pin 27
 
     ; set input
-    mov osr, null [8] ; waiting a little seems required
+    mov osr, null [4] ; waiting a little seems required
     out pindirs, 16
 .wrap

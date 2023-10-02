@@ -58,7 +58,7 @@ static void pio_init() {
     sm_config_set_in_shift(&cfg, false, true, 25);
 
     // pio seems to be okay at 125MHz
-    //sm_config_set_clkdiv_int_frac(&cfg, 2, 0);
+    sm_config_set_clkdiv_int_frac(&cfg, 2, 0);
 
     pio_sm_init(gba_cart_pio, rom_cs_sm, offset, &cfg);
 
@@ -70,7 +70,7 @@ static void pio_init() {
     sm_config_set_out_shift(&cfg, false, false, 16);
 
     //
-    //sm_config_set_clkdiv_int_frac(&cfg, 2, 0);
+    sm_config_set_clkdiv_int_frac(&cfg, 2, 0);
 
     pio_sm_init(gba_cart_pio, rom_rd_sm, offset, &cfg);
 
