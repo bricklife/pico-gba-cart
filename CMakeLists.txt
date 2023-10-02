@@ -28,7 +28,7 @@ add_custom_command(
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/gba/
     OUTPUT gba-rom.o
     COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-littlearm -B armv6s-m gba-rom.gba ${CMAKE_BINARY_DIR}/gba-rom.o
-    DEPENDS gba-rom-build
+    DEPENDS ${CMAKE_BINARY_DIR}/gba/gba-rom.gba
 )
 
 # Add executable. Default name is the project name, version 0.1
