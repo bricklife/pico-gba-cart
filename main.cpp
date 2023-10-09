@@ -46,6 +46,10 @@ static void __not_in_flash_func(pio_irq1_handler)() {
     
     pio_interrupt_clear(gba_cart_pio, 0);
     pio_sm_clear_fifos(gba_cart_pio, rom_rd_sm);
+
+    // GBA might have requested a bad address
+    // happens during boot
+    hw_set_bits(&dma_hw->ch[rom_read_dma_channel].al1_ctrl, DMA_CH0_CTRL_TRIG_READ_ERROR_BITS);
 }
 
 static void pio_init() {
