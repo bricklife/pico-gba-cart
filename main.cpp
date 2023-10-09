@@ -13,12 +13,9 @@
 extern char _binary_gba_rom_gba_start[];
 static auto rom_ptr = _binary_gba_rom_gba_start;
 
-static constexpr uint32_t romAddrMask = 0x7FFFFF; // missing a bit
-static constexpr uint32_t romDataMask = 0xFFFF;
-
 static constexpr int cs_pin = 26;
-static constexpr int rd_pin = 27;
-static constexpr int wr_pin = 28;
+static constexpr int rd_pin = 25;
+static constexpr int wr_pin = 24;
 
 static uint32_t rom_addr;
 

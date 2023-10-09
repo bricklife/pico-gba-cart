@@ -16,7 +16,7 @@
 .program gba_rom_rd
 .wrap_target
     wait 0 pin 26 ; wait for CS
-    wait 0 pin 27 ; wait for RD
+    wait 0 pin 25 ; wait for RD
 
     ; data
     pull
@@ -26,7 +26,7 @@
     mov osr, ~null
     out pindirs, 16
 
-    wait 1 pin 27
+    wait 1 pin 25
 
     ; set input
     mov osr, null [4] ; waiting a little seems required
