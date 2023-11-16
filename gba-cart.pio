@@ -9,7 +9,7 @@
     in null, 1 ; x2 PIO style
 
     wait 1 pin 26
-    irq set 0 [6] ; make sure rd sm is not writing + ??
+    irq set 0 [7] ; make sure rd sm is not writing + ??
 .wrap
 
 ; switches pins to output and writes data when RD goes low
