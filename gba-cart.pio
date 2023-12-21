@@ -3,13 +3,14 @@
 ; reads address when ROM CS goes low
 ; assumes CS = GPIO 26
 .wrap_target
-    wait 0 pin 26 [2] ; address should be vaild but..?
+    wait 0 pin 26
 
-    in pins, 24 [6] ; pretty sure this delay is compensating for the code being too slow...
+    in pins, 24 ; latch address
+    wait 0 irq 0 ; wait for last transfer to abort
     in null, 1 ; x2 PIO style
 
     wait 1 pin 26
-    irq set 0 [7] ; make sure rd sm is not writing + ??
+    irq set 0
 .wrap
 
 ; switches pins to output and writes data when RD goes low
