@@ -31,7 +31,7 @@ static void __not_in_flash_func(dma_irq_handler)() {
     dma_channel_acknowledge_irq0(rom_addr_dma_channel);
 }
 
-static void __not_in_flash_func(pio_irq1_handler)() {
+static void __not_in_flash_func(pio_irq0_handler)() {
     // abort DMA and clear FIFO
 
     // this saves a couple of instructions
@@ -131,7 +131,7 @@ int main() {
 
     // cs high
     pio_set_irq0_source_enabled(gba_cart_pio, pis_interrupt0, true);
-    irq_set_exclusive_handler(PIO0_IRQ_0, pio_irq1_handler);
+    irq_set_exclusive_handler(PIO0_IRQ_0, pio_irq0_handler);
     irq_set_enabled(PIO0_IRQ_0, true);
 
     // wait for CS to go high (GBA turned on)
