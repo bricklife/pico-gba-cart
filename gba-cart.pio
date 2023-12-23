@@ -33,3 +33,14 @@
     mov osr, null [4] ; waiting a little seems required
     out pindirs, 16
 .wrap
+
+; reads when WR goes low
+.program gba_rom_wr
+.wrap_target
+    wait 0 pin 26 ; wait for CS
+    wait 0 pin 24 ; wait for WR
+
+    in pins, 16
+
+    wait 1 pin 24
+.wrap

@@ -21,14 +21,18 @@ static uint32_t rom_addr;
 
 // SMs and DMA channels accessed in IRQ handlers should be pre-allocated constants
 static constexpr int rom_cs_sm = 0, rom_rd_sm = 1;
+static int rom_wr_sm;
 static const PIO gba_cart_pio = pio0;
 
-static constexpr int rom_read_dma_channel = 0;
+static constexpr int rom_read_dma_channel = 0, rom_write_dma_channel = 1;
 static int rom_addr_dma_channel, rom_addr_sniff_dma_channel;
 
 static void __not_in_flash_func(dma_irq_handler)() {
     dma_sniffer_set_data_accumulator((uint32_t)rom_ptr);
     dma_channel_acknowledge_irq0(rom_addr_dma_channel);
+
+    // also set up the write channel (less time sensitive)
+    dma_channel_set_write_addr(rom_write_dma_channel, rom_ptr + rom_addr, true);
 }
 
 static void __not_in_flash_func(pio_irq0_handler)() {
@@ -36,7 +40,7 @@ static void __not_in_flash_func(pio_irq0_handler)() {
 
     // this saves a couple of instructions
     static const auto dma_abort = &dma_hw->abort;
-    *dma_abort = 1u << rom_read_dma_channel;
+    *dma_abort = 1u << rom_read_dma_channel | 1u << rom_write_dma_channel;
 
     // assume TX FIFO was full so no transfers were left in flight
     //while(dma_channel_hw_addr(rom_read_dma_channel)->ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS);
@@ -51,6 +55,8 @@ static void __not_in_flash_func(pio_irq0_handler)() {
 
 static void pio_init() {
     pio_claim_sm_mask(gba_cart_pio, 1 << rom_cs_sm | 1 << rom_rd_sm);
+
+    rom_wr_sm = pio_claim_unused_sm(gba_cart_pio, true);
 
     // cs
     auto offset = pio_add_program(gba_cart_pio, &gba_rom_cs_program);
@@ -69,6 +75,14 @@ static void pio_init() {
 
     pio_sm_init(gba_cart_pio, rom_rd_sm, offset, &cfg);
 
+    // wr
+    offset = pio_add_program(gba_cart_pio, &gba_rom_wr_program);
+    cfg = gba_rom_wr_program_get_default_config(offset);
+
+    sm_config_set_in_shift(&cfg, false, true, 16);
+
+    pio_sm_init(gba_cart_pio, rom_wr_sm, offset, &cfg);
+
     // init all io
     pio_sm_set_pins(gba_cart_pio, rom_cs_sm, 0);
     pio_sm_set_consecutive_pindirs(gba_cart_pio, rom_cs_sm, 0, 32, false);
@@ -79,7 +93,7 @@ static void pio_init() {
 }
 
 static void dma_init() {
-    dma_claim_mask(1 << rom_read_dma_channel);
+    dma_claim_mask(1 << rom_read_dma_channel | 1 << rom_write_dma_channel);
     rom_addr_dma_channel = dma_claim_unused_channel(true);
     rom_addr_sniff_dma_channel = dma_claim_unused_channel(true);
 
@@ -89,8 +103,16 @@ static void dma_init() {
     channel_config_set_dreq(&config, pio_get_dreq(gba_cart_pio, rom_rd_sm, true));
     dma_channel_configure(rom_read_dma_channel, &config, &gba_cart_pio->txf[rom_rd_sm], rom_ptr, 0x10000, false);
 
-    // address
-    // destination isn't actually used
+    // write data
+    config = dma_channel_get_default_config(rom_write_dma_channel);
+    channel_config_set_read_increment(&config, false);
+    channel_config_set_write_increment(&config, true);
+    channel_config_set_transfer_data_size(&config, DMA_SIZE_16);
+    channel_config_set_dreq(&config, pio_get_dreq(gba_cart_pio, rom_wr_sm, false));
+    dma_channel_configure(rom_write_dma_channel, &config, rom_ptr, &gba_cart_pio->rxf[rom_wr_sm], 0x10000, false);
+
+    // read address through sniffer to add base ptr
+    // destination also used for write setup 
     config = dma_channel_get_default_config(rom_addr_dma_channel);
     channel_config_set_dreq(&config, pio_get_dreq(gba_cart_pio, rom_cs_sm, false));
     channel_config_set_read_increment(&config, false);
@@ -100,7 +122,7 @@ static void dma_init() {
 
     dma_channel_configure(rom_addr_dma_channel, &config, &rom_addr, &gba_cart_pio->rxf[rom_cs_sm], 1, false);
 
-    // sniffed address
+    // transfer sniffed address to trigger read channel
     config = dma_channel_get_default_config(rom_addr_sniff_dma_channel);
     channel_config_set_read_increment(&config, false);
 
@@ -139,7 +161,7 @@ int main() {
     sleep_ms(1);
 
     dma_channel_start(rom_addr_dma_channel);
-    pio_set_sm_mask_enabled(gba_cart_pio, 1 << rom_cs_sm | 1 << rom_rd_sm, true);
+    pio_set_sm_mask_enabled(gba_cart_pio, 1 << rom_cs_sm | 1 << rom_rd_sm | 1 << rom_wr_sm, true);
 
     while(true) __wfe();
 
