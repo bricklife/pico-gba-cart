@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <seven/prelude.h>
+#include <seven/hw/bios/memory.h>
 #include <seven/hw/video.h>
 #include <seven/hw/video/bg_bitmap.h>
 #include <seven/hw/video/bg_transform.h>
@@ -39,11 +40,18 @@ int main() {
     irqEnable(IRQ_VBLANK);
     REG_DISPSTAT = LCD_VBLANK_IRQ_ENABLE;
 
+    volatile uint32_t *cart_data = (volatile uint32_t *)(MEM_ROM + 0xC0);
+
     // do some scrolling so I can see if it died
     int off = 0;
     int d = 1;
     while(true) {
         REG_BG2X = off << 8;
+
+        // write test
+        *cart_data = off;
+        off = *cart_data;
+
         off += d;
         if(off > 100)
             d = -1;
