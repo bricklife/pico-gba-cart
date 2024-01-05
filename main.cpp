@@ -27,6 +27,8 @@ static const PIO gba_cart_pio = pio0;
 static constexpr int rom_read_dma_channel = 0, rom_write_dma_channel = 1;
 static int rom_addr_dma_channel, rom_addr_sniff_dma_channel;
 
+static uint16_t fb[240 * 160];
+
 static void __not_in_flash_func(dma_irq_handler)() {
     dma_sniffer_set_data_accumulator((uint32_t)rom_ptr);
     dma_channel_acknowledge_irq0(rom_addr_dma_channel);
@@ -141,6 +143,11 @@ static void dma_init() {
     irq_set_enabled(DMA_IRQ_0, true);
 }
 
+inline uint32_t to_gba_addr(void *ptr) {
+    // this assumes the "ROM" data is before anything we want to pass through
+    return reinterpret_cast<uintptr_t>(ptr) - reinterpret_cast<uintptr_t>(rom_ptr) + 0x8000000;
+}
+
 int main() {
     set_sys_clock_khz(250000, true);
     // lowest stable?
@@ -156,6 +163,9 @@ int main() {
     irq_set_exclusive_handler(PIO0_IRQ_0, pio_irq0_handler);
     irq_set_enabled(PIO0_IRQ_0, true);
 
+    // patch framebuffer addr into "ROM" data
+    *reinterpret_cast<uint32_t *>(rom_ptr + 0xC0) = to_gba_addr(fb);
+
     // wait for CS to go high (GBA turned on)
     while(!gpio_get(cs_pin));
     sleep_ms(1);
@@ -163,7 +173,23 @@ int main() {
     dma_channel_start(rom_addr_dma_channel);
     pio_set_sm_mask_enabled(gba_cart_pio, 1 << rom_cs_sm | 1 << rom_rd_sm | 1 << rom_wr_sm, true);
 
-    while(true) __wfe();
+    // draw something to framebuffer
+    auto vblank_flag = reinterpret_cast<volatile uint16_t *>(rom_ptr + 0xC4);
+
+    int t = 0;
+    while(true) {
+        if(*vblank_flag) {
+            for(int y = 0; y < 160; y++) {
+                for(int x = 0; x < 240; x++) {
+                    fb[x + y * 240] = (x == t || y == t) ? 0xFFFF : 0;
+                }
+            }
+
+            t = (t + 1) % 240;
+            *vblank_flag = 0;
+        }
+        __wfe();
+    }
 
     return 0;
 }

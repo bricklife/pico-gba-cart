@@ -5,6 +5,7 @@
 
 #include <seven/prelude.h>
 #include <seven/hw/bios/memory.h>
+#include <seven/hw/dma.h>
 #include <seven/hw/video.h>
 #include <seven/hw/video/bg_bitmap.h>
 #include <seven/hw/video/bg_transform.h>
@@ -42,6 +43,8 @@ int main() {
 
     volatile uint32_t *cart_data = (volatile uint32_t *)(MEM_ROM + 0xC0);
 
+    volatile uint16_t *vblank_flag = (volatile uint16_t *)(cart_data + 1);
+
     // do some scrolling so I can see if it died
     int off = 0;
     int d = 1;
@@ -49,14 +52,23 @@ int main() {
         REG_BG2X = off << 8;
 
         // write test
-        *cart_data = off;
-        off = *cart_data;
+        //*cart_data = off;
+        //off = *cart_data;
 
         off += d;
         if(off > 100)
             d = -1;
         else if(off < -100)
             d = 1;
+
+        *vblank_flag = 1;
+
+        if(*cart_data) {
+            uint16_t *fb_ptr = (uint16_t *)*cart_data;
+
+            struct DMA screen_dma = {fb_ptr, MODE3_FRAME, 240 * 160, DMA_16BIT | DMA_ENABLE};
+            dmaSet(3, screen_dma);
+        }
 
         biosVBlankIntrWait();
     }
