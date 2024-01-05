@@ -92,6 +92,8 @@ static void pio_init() {
     for(int i = 0; i < 30; i++)
         pio_gpio_init(gba_cart_pio, i);
 
+    // bypass synchroniser
+    hw_set_bits(&gba_cart_pio->input_sync_bypass, 0x3FFFFFF);
 }
 
 static void dma_init() {
