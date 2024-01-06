@@ -10,7 +10,7 @@
 
 #include "gba-cart.pio.h"
 
-extern char _binary_gba_rom_gba_start[];
+alignas(4) extern char _binary_gba_rom_gba_start[];
 static auto rom_ptr = _binary_gba_rom_gba_start;
 
 static constexpr int cs_pin = 26;
