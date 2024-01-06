@@ -10,6 +10,12 @@
 
 #include "gba-cart.pio.h"
 
+// using 16-bit values for bools as the min access size on the cart bus is 16-bit
+struct CartAPI {
+    volatile uint32_t fb_addr;
+    volatile uint16_t vblank_flag; // set to 1 by GBA at the start fo vblank
+};
+
 alignas(4) extern char _binary_gba_rom_gba_start[];
 static auto rom_ptr = _binary_gba_rom_gba_start;
 
@@ -166,7 +172,8 @@ int main() {
     irq_set_enabled(PIO0_IRQ_0, true);
 
     // patch framebuffer addr into "ROM" data
-    *reinterpret_cast<uint32_t *>(rom_ptr + 0xC0) = to_gba_addr(fb);
+    auto cart_api = reinterpret_cast<CartAPI *>(rom_ptr + 0xC0);
+    cart_api->fb_addr = to_gba_addr(fb);
 
     // wait for CS to go high (GBA turned on)
     while(!gpio_get(cs_pin));
@@ -176,11 +183,9 @@ int main() {
     pio_set_sm_mask_enabled(gba_cart_pio, 1 << rom_cs_sm | 1 << rom_rd_sm | 1 << rom_wr_sm, true);
 
     // draw something to framebuffer
-    auto vblank_flag = reinterpret_cast<volatile uint16_t *>(rom_ptr + 0xC4);
-
     int t = 0;
     while(true) {
-        if(*vblank_flag) {
+        if(cart_api->vblank_flag) {
             for(int y = 0; y < 160; y++) {
                 for(int x = 0; x < 240; x++) {
                     fb[x + y * 240] = (x == t || y == t) ? 0xFFFF : 0;
@@ -188,7 +193,7 @@ int main() {
             }
 
             t = (t + 1) % 240;
-            *vblank_flag = 0;
+            cart_api->vblank_flag = 0;
         }
         __wfe();
     }

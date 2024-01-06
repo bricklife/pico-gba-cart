@@ -11,6 +11,11 @@
 #include <seven/hw/video/bg_transform.h>
 #include <seven/hw/waitstate.h>
 
+struct CartAPI {
+    volatile uint32_t fb_addr;
+    volatile uint16_t vblank_flag;
+};
+
 int main() {
     // values used by official software (according to gbatek)
     // (default would be 4/2)
@@ -41,9 +46,7 @@ int main() {
     irqEnable(IRQ_VBLANK);
     REG_DISPSTAT = LCD_VBLANK_IRQ_ENABLE;
 
-    volatile uint32_t *cart_data = (volatile uint32_t *)(MEM_ROM + 0xC0);
-
-    volatile uint16_t *vblank_flag = (volatile uint16_t *)(cart_data + 1);
+    struct CartAPI *cart_api = (struct CartAPI *)(MEM_ROM + 0xC0);
 
     // do some scrolling so I can see if it died
     int off = 0;
@@ -51,20 +54,16 @@ int main() {
     while(true) {
         REG_BG2X = off << 8;
 
-        // write test
-        //*cart_data = off;
-        //off = *cart_data;
-
         off += d;
         if(off > 100)
             d = -1;
         else if(off < -100)
             d = 1;
 
-        *vblank_flag = 1;
+        cart_api->vblank_flag = 1;
 
-        if(*cart_data) {
-            uint16_t *fb_ptr = (uint16_t *)*cart_data;
+        if(cart_api->fb_addr) {
+            uint16_t *fb_ptr = (uint16_t *)cart_api->fb_addr;
 
             struct DMA screen_dma = {fb_ptr, MODE3_FRAME, 240 * 160, DMA_16BIT | DMA_ENABLE};
             dmaSet(3, screen_dma);
