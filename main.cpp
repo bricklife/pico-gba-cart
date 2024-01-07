@@ -156,6 +156,24 @@ inline uint32_t to_gba_addr(void *ptr) {
     return reinterpret_cast<uintptr_t>(ptr) - reinterpret_cast<uintptr_t>(rom_ptr) + 0x8000000;
 }
 
+// run update code from RAM to avoid interrupt delays from XIP cache misses
+// ... at least, I think that's what happens...
+void __no_inline_not_in_flash_func(update)() {
+    static int t = 0;
+    auto cart_api = reinterpret_cast<CartAPI *>(rom_ptr + 0xC0);
+
+    if(cart_api->vblank_flag) {
+        for(int y = 0; y < 160; y++) {
+            for(int x = 0; x < 240; x++) {
+                fb[x + y * 240] = (x == t || y == t) ? 0xFFFF : 0;
+            }
+        }
+
+        t = (t + 1) % 240;
+        cart_api->vblank_flag = 0;
+    }
+}
+
 int main() {
     set_sys_clock_khz(250000, true);
     // lowest stable?
@@ -183,18 +201,8 @@ int main() {
     pio_set_sm_mask_enabled(gba_cart_pio, 1 << rom_cs_sm | 1 << rom_rd_sm | 1 << rom_wr_sm, true);
 
     // draw something to framebuffer
-    int t = 0;
     while(true) {
-        if(cart_api->vblank_flag) {
-            for(int y = 0; y < 160; y++) {
-                for(int x = 0; x < 240; x++) {
-                    fb[x + y * 240] = (x == t || y == t) ? 0xFFFF : 0;
-                }
-            }
-
-            t = (t + 1) % 240;
-            cart_api->vblank_flag = 0;
-        }
+        update();
         __wfe();
     }
 
