@@ -62,9 +62,8 @@ int main() {
 
         cart_api->vblank_flag = 1;
 
-        if(cart_api->fb_addr) {
-            uint16_t *fb_ptr = (uint16_t *)cart_api->fb_addr;
-
+        uint16_t *fb_ptr = (uint16_t *)cart_api->fb_addr;
+        if(fb_ptr) {
             struct DMA screen_dma = {fb_ptr, MODE3_FRAME, 240 * 160, DMA_16BIT | DMA_ENABLE};
             dmaSet(3, screen_dma);
         }
