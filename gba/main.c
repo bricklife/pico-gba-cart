@@ -14,6 +14,7 @@
 struct CartAPI {
     volatile uint32_t fb_addr;
     volatile uint16_t vblank_flag;
+    volatile uint16_t buttons;
 };
 
 int main() {
@@ -60,6 +61,7 @@ int main() {
         else if(off < -100)
             d = 1;
 
+        cart_api->buttons = REG_KEYINPUT;
         cart_api->vblank_flag = 1;
 
         uint16_t *fb_ptr = (uint16_t *)cart_api->fb_addr;
