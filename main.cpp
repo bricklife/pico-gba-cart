@@ -35,6 +35,7 @@ void __no_inline_not_in_flash_func(update)() {
         }
 
         cart_api->vblank_flag = 0;
+        cart_api->fb_addr = gbacart_to_gba_addr(fb);
     }
 }
 
@@ -46,10 +47,6 @@ int main() {
     //stdio_init_all();
 
     gbacart_init();
-
-    // patch framebuffer addr into "ROM" data
-    auto cart_api = gbacart_get_api();
-    cart_api->fb_addr = gbacart_to_gba_addr(fb);
 
     gbacart_start(true);
 
