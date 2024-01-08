@@ -15,7 +15,7 @@ ExternalProject_Add(gba-rom-build
 add_custom_command(
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gba/
     OUTPUT gba-rom.o
-    COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-littlearm -B armv6s-m gba-rom.gba ${CMAKE_CURRENT_BINARY_DIR}/gba-rom.o
+    COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-littlearm -B armv6s-m --set-section-alignment .data=4 gba-rom.gba ${CMAKE_CURRENT_BINARY_DIR}/gba-rom.o
     DEPENDS gba-rom-build
 )
 
