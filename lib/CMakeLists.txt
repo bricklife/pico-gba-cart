@@ -1,0 +1,30 @@
+
+# build gba ROM
+include(ExternalProject)
+ExternalProject_Add(gba-rom-build
+    PREFIX gba
+    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../gba
+    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/gba
+
+    CMAKE_ARGS "-DCMAKE_TOOLCHAIN_FILE=${GBA_TOOLCHAIN_FILE}" -DCMAKE_BUILD_TYPE=Release
+    BUILD_ALWAYS TRUE
+
+    INSTALL_COMMAND ""
+)
+
+add_custom_command(
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gba/
+    OUTPUT gba-rom.o
+    COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-littlearm -B armv6s-m gba-rom.gba ${CMAKE_CURRENT_BINARY_DIR}/gba-rom.o
+    DEPENDS gba-rom-build
+)
+
+add_library(gbacart STATIC
+    gbacart.cpp
+    gba-rom.o
+)
+
+target_link_libraries(gbacart pico_stdlib hardware_dma hardware_pio)
+target_include_directories(gbacart PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+pico_generate_pio_header(gbacart ${CMAKE_CURRENT_LIST_DIR}/gba-cart.pio)
