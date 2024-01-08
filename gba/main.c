@@ -49,18 +49,7 @@ int main() {
 
     struct CartAPI *cart_api = (struct CartAPI *)(MEM_ROM + 0xC0);
 
-    // do some scrolling so I can see if it died
-    int off = 0;
-    int d = 1;
     while(true) {
-        REG_BG2X = off << 8;
-
-        off += d;
-        if(off > 100)
-            d = -1;
-        else if(off < -100)
-            d = 1;
-
         cart_api->buttons = REG_KEYINPUT;
         cart_api->vblank_flag = 1;
 
