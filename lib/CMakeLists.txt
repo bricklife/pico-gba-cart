@@ -8,6 +8,7 @@ ExternalProject_Add(gba-rom-build
 
     CMAKE_ARGS "-DCMAKE_TOOLCHAIN_FILE=${GBA_TOOLCHAIN_FILE}" -DCMAKE_BUILD_TYPE=Release
     BUILD_ALWAYS TRUE
+    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/gba/gba-rom.gba
 
     INSTALL_COMMAND ""
 )
@@ -16,7 +17,7 @@ add_custom_command(
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gba/
     OUTPUT gba-rom.o
     COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-littlearm -B armv6s-m --set-section-alignment .data=4 gba-rom.gba ${CMAKE_CURRENT_BINARY_DIR}/gba-rom.o
-    DEPENDS gba-rom-build
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gba/gba-rom.gba
 )
 
 add_library(gbacart STATIC
