@@ -48,6 +48,13 @@ int main() {
 
     gbacart_init();
 
+    auto cart_api = gbacart_get_api();
+
+    // 1x scale, full height
+    cart_api->fb_pa = 1 << 8;
+    cart_api->fb_pd = 1 << 8;
+    cart_api->fb_height = 160;
+
     gbacart_start(true);
 
     // draw something to framebuffer

@@ -14,6 +14,9 @@
 struct CartAPI {
     volatile uint32_t fb_addr;
     volatile uint16_t vblank_flag;
+    volatile uint16_t fb_pa, fb_pd;
+    volatile uint16_t fb_height;
+
     volatile uint16_t buttons;
 };
 
@@ -37,7 +40,11 @@ int main() {
 
         uint16_t *fb_ptr = (uint16_t *)cart_api->fb_addr;
         if(fb_ptr) {
-            struct DMA screen_dma = {fb_ptr, MODE3_FRAME, 240 * 160, DMA_16BIT | DMA_ENABLE};
+
+            REG_BG2PA = cart_api->fb_pa;
+            REG_BG2PD = cart_api->fb_pd;
+
+            struct DMA screen_dma = {fb_ptr, MODE3_FRAME, 240 * cart_api->fb_height, DMA_16BIT | DMA_ENABLE};
             dmaSet(3, screen_dma);
             cart_api->fb_addr = 0;
         }
