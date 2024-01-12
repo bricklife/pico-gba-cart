@@ -3,5 +3,7 @@
     {
         "PICO_SDK_PATH": "${env:HOME}/repos/pico/pico-sdk",
         "GBA_TOOLCHAIN_FILE": "${env:HOME}/repos/gba/gba-toolchain/arm-gba-toolchain.cmake"
-    }
+    },
+    "cmake.mergedCompileCommands": "${workspaceFolder}/build/merged_compile_commands.json",
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/merged_compile_commands.json"
 }
