@@ -17,6 +17,6 @@ target_link_libraries(gba-rom PRIVATE rom seven)
 target_link_options(gba-rom PRIVATE -Wl,--gc-sections)
 
 # make some space after the header
-target_compile_definitions(rom PRIVATE -D__ROM_START_PADDING__=16)
+target_compile_definitions(rom PRIVATE -D__ROM_START_PADDING__=32)
 
 gba_target_objcopy(gba-rom FIX_HEADER GAME_CODE "CRPE")

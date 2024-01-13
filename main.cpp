@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdio>
 
 #include "pico/stdlib.h"
@@ -9,12 +10,24 @@
 
 static uint16_t fb[240 * 160];
 
+// must be a multiple of 16
+static constexpr int audio_buf_size = 544;
+static int8_t sine_buf[audio_buf_size];
+
 // run update code from RAM to avoid interrupt delays from XIP cache misses
 // ... at least, I think that's what happens...
 void __no_inline_not_in_flash_func(update)() {
     static int cursor_x = 0, cursor_y = 0;
     auto cart_api = gbacart_get_api();
 
+    // update audio buffers
+    if(!cart_api->audio_addr[0])
+        cart_api->audio_addr[0] = gbacart_to_gba_addr(sine_buf);
+
+    if(!cart_api->audio_addr[1])
+        cart_api->audio_addr[1] = gbacart_to_gba_addr(sine_buf);
+
+    // draw something to framebuffer
     if(cart_api->vblank_flag) {
         auto button_state = ~cart_api->buttons;
     
@@ -46,6 +59,9 @@ int main() {
 
     //stdio_init_all();
 
+    for(int i = 0; i < audio_buf_size; i++)
+        sine_buf[i] = std::sin((float(i) / audio_buf_size * 16) * M_PI) * 127;
+
     gbacart_init();
 
     auto cart_api = gbacart_get_api();
@@ -55,9 +71,11 @@ int main() {
     cart_api->fb_pd = 1 << 8;
     cart_api->fb_height = 160;
 
+    cart_api->audio_buf_size = audio_buf_size;
+    cart_api->audio_timer = 0x10000 - ((1 << 24) / 32768); // 32768Hz
+
     gbacart_start(true);
 
-    // draw something to framebuffer
     while(true) {
         update();
         __wfe();

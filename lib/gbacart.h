@@ -14,6 +14,10 @@ struct CartAPI {
     volatile uint16_t fb_pa, fb_pd; // scale params
     volatile uint16_t fb_height;
 
+    volatile uint32_t audio_addr[2];
+    volatile uint16_t audio_buf_size;
+    volatile uint16_t audio_timer;
+
     volatile uint16_t buttons; // A, B, Select, Start, Right, Left, Up, Down, R, L (0 == pressed)
 };
 
