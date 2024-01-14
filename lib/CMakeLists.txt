@@ -1,4 +1,8 @@
 
+if(NOT DEFINED GBA_TOOLCHAIN_FILE)
+    message(FATAL_ERROR "Set GBA_TOOLCHAIN_FILE! (path to gba-toolchain/arm-gba-toolchain.cmake)")
+endif()
+
 # build gba ROM
 include(ExternalProject)
 ExternalProject_Add(gba-rom-build
