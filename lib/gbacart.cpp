@@ -154,14 +154,14 @@ void gbacart_init() {
 void gbacart_start(bool wait_power) {
 
     if(wait_power) {
-        // wait for CS to go high (GBA turned on)
-        while(!gpio_get(cs_pin))
-            sleep_ms(1);
+        auto wait_high = pio_encode_wait_gpio(1, cs_pin);
+        pio_sm_exec(gba_cart_pio, rom_cs_sm, wait_high);
+        pio_sm_exec(gba_cart_pio, rom_rd_sm, wait_high);
+        pio_sm_exec(gba_cart_pio, rom_wr_sm, wait_high);
     }
 
     dma_channel_start(rom_addr_dma_channel);
     pio_set_sm_mask_enabled(gba_cart_pio, 1 << rom_cs_sm | 1 << rom_rd_sm | 1 << rom_wr_sm, true);
-
 }
 
 struct CartAPI *gbacart_get_api() {
