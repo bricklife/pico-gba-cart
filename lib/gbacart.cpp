@@ -155,7 +155,7 @@ void gbacart_start(bool wait_power) {
 
     if(wait_power) {
         // wait for CS to go high (GBA turned on)
-        while(!gpio_get(cs_pin));
+        while(!gpio_get(cs_pin))
             sleep_ms(1);
     }
 
