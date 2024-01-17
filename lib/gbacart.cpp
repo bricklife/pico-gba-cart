@@ -21,9 +21,41 @@ static uint32_t rom_addr;
 static constexpr int rom_cs_sm = 0, rom_rd_sm = 1;
 static int rom_wr_sm;
 static const PIO gba_cart_pio = pio0;
+static uint8_t rom_cs_offset, rom_rd_offset, rom_wr_offset;
 
 static constexpr int rom_read_dma_channel = 0, rom_write_dma_channel = 1;
 static int rom_addr_dma_channel, rom_addr_sniff_dma_channel;
+
+[[gnu::noinline]]
+static void reset() {
+    // abort DMA and disable SMs
+    dma_hw->abort = 1u << rom_read_dma_channel | 1u << rom_write_dma_channel | 1 << rom_addr_dma_channel;
+
+    auto sm_mask = 1 << rom_cs_sm | 1 << rom_rd_sm | 1 << rom_wr_sm;
+    pio_set_sm_mask_enabled(gba_cart_pio, sm_mask, false);
+
+    // re-init SMs
+    pio_sm_clear_fifos(gba_cart_pio, rom_cs_sm);
+    pio_sm_clear_fifos(gba_cart_pio, rom_rd_sm);
+    pio_sm_clear_fifos(gba_cart_pio, rom_wr_sm);
+
+    pio_restart_sm_mask(gba_cart_pio, sm_mask);
+
+    pio_sm_exec(gba_cart_pio, rom_cs_sm, pio_encode_jmp(rom_cs_offset));
+    pio_sm_exec(gba_cart_pio, rom_rd_sm, pio_encode_jmp(rom_rd_offset));
+    pio_sm_exec(gba_cart_pio, rom_wr_sm, pio_encode_jmp(rom_wr_offset));
+
+    pio_sm_set_consecutive_pindirs(gba_cart_pio, rom_cs_sm, 0, 32, false);
+
+    // restart
+    auto wait_high = pio_encode_wait_gpio(1, cs_pin);
+    pio_sm_exec(gba_cart_pio, rom_cs_sm, wait_high);
+    pio_sm_exec(gba_cart_pio, rom_rd_sm, wait_high);
+    pio_sm_exec(gba_cart_pio, rom_wr_sm, wait_high);
+
+    dma_channel_start(rom_addr_dma_channel);
+    pio_set_sm_mask_enabled(gba_cart_pio, sm_mask, true);
+}
 
 static void __not_in_flash_func(dma_irq_handler)() {
     dma_sniffer_set_data_accumulator((uint32_t)rom_ptr);
@@ -31,6 +63,11 @@ static void __not_in_flash_func(dma_irq_handler)() {
 
     // also set up the write channel (less time sensitive)
     dma_channel_set_write_addr(rom_write_dma_channel, rom_ptr + rom_addr, true);
+
+    if(((gpio_get_all() >> wr_pin) & 7) == 0){
+        // WR + RD both low shouldn't happen unless the GBA is off or cart removed
+        reset();
+    }
 }
 
 static void __not_in_flash_func(pio_irq0_handler)() {
@@ -57,7 +94,7 @@ static void pio_init() {
     rom_wr_sm = pio_claim_unused_sm(gba_cart_pio, true);
 
     // cs
-    auto offset = pio_add_program(gba_cart_pio, &gba_rom_cs_program);
+    auto offset = rom_cs_offset = pio_add_program(gba_cart_pio, &gba_rom_cs_program);
     auto cfg = gba_rom_cs_program_get_default_config(offset);
 
     sm_config_set_in_shift(&cfg, false, true, 25);
@@ -65,7 +102,7 @@ static void pio_init() {
     pio_sm_init(gba_cart_pio, rom_cs_sm, offset, &cfg);
 
     // rd
-    offset = pio_add_program(gba_cart_pio, &gba_rom_rd_program);
+    offset = rom_rd_offset = pio_add_program(gba_cart_pio, &gba_rom_rd_program);
     cfg = gba_rom_rd_program_get_default_config(offset);
 
     sm_config_set_out_pins(&cfg, 0, 16);
@@ -74,7 +111,7 @@ static void pio_init() {
     pio_sm_init(gba_cart_pio, rom_rd_sm, offset, &cfg);
 
     // wr
-    offset = pio_add_program(gba_cart_pio, &gba_rom_wr_program);
+    offset = rom_wr_offset = pio_add_program(gba_cart_pio, &gba_rom_wr_program);
     cfg = gba_rom_wr_program_get_default_config(offset);
 
     sm_config_set_in_shift(&cfg, false, true, 16);
