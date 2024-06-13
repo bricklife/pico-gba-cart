@@ -14,6 +14,7 @@ static auto rom_ptr = _binary_gba_rom_gba_start;
 static constexpr int cs_pin = 26;
 static constexpr int rd_pin = 25;
 static constexpr int wr_pin = 24;
+static constexpr int addr_bits = 23; // all 24 on PGA board
 
 static uint32_t rom_addr;
 
@@ -119,14 +120,21 @@ static void pio_init() {
     pio_sm_init(gba_cart_pio, rom_wr_sm, offset, &cfg);
 
     // init all io
+    auto mask = ((1 << addr_bits) - 1) | 1 << cs_pin | 1 << rd_pin | 1 << wr_pin;
     pio_sm_set_pins(gba_cart_pio, rom_cs_sm, 0);
     pio_sm_set_consecutive_pindirs(gba_cart_pio, rom_cs_sm, 0, 32, false);
+    pio_sm_set_pindirs_with_mask(gba_cart_pio, rom_cs_sm, 0, mask);
 
-    for(int i = 0; i < 30; i++)
+    // address/data
+    for(int i = 0; i < addr_bits; i++)
         pio_gpio_init(gba_cart_pio, i);
 
+    pio_gpio_init(gba_cart_pio, cs_pin);
+    pio_gpio_init(gba_cart_pio, rd_pin);
+    pio_gpio_init(gba_cart_pio, wr_pin);
+
     // bypass synchroniser
-    hw_set_bits(&gba_cart_pio->input_sync_bypass, 0x3FFFFFF);
+    hw_set_bits(&gba_cart_pio->input_sync_bypass, mask);
 }
 
 static void dma_init() {
@@ -191,7 +199,7 @@ void gbacart_init() {
 void gbacart_start(bool wait_power) {
 
     if(wait_power) {
-        auto wait_high = pio_encode_wait_gpio(1, cs_pin);
+        auto wait_high = pio_encode_wait_gpio(1, rd_pin);
         pio_sm_exec(gba_cart_pio, rom_cs_sm, wait_high);
         pio_sm_exec(gba_cart_pio, rom_rd_sm, wait_high);
         pio_sm_exec(gba_cart_pio, rom_wr_sm, wait_high);
