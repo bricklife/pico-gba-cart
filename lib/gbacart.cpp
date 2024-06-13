@@ -98,7 +98,7 @@ static void pio_init() {
     auto offset = rom_cs_offset = pio_add_program(gba_cart_pio, &gba_rom_cs_program);
     auto cfg = gba_rom_cs_program_get_default_config(offset);
 
-    sm_config_set_in_shift(&cfg, false, true, 25);
+    sm_config_set_in_shift(&cfg, false, true, 24);
 
     pio_sm_init(gba_cart_pio, rom_cs_sm, offset, &cfg);
 
