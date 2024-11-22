@@ -26,7 +26,7 @@ pico_enable_stdio_uart(pico-gba-cart 0)
 pico_enable_stdio_usb(pico-gba-cart 0)
 
 target_compile_options(pico-gba-cart PRIVATE -Wall)
-target_link_libraries(pico-gba-cart pico_stdlib gbacart)
+target_link_libraries(pico-gba-cart pico_stdlib gbacart pico_bootsel_via_double_reset)
 
 pico_add_extra_outputs(pico-gba-cart)
 

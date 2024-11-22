@@ -8,12 +8,12 @@
 
 #include "gba-cart.pio.h"
 
-alignas(4) extern char _binary_gba_rom_gba_start[];
+#include "rom.h"
 static auto rom_ptr = _binary_gba_rom_gba_start;
 
-static constexpr int cs_pin = 26;
-static constexpr int rd_pin = 25;
-static constexpr int wr_pin = 24;
+static constexpr int cs_pin = 28;
+static constexpr int rd_pin = 27;
+static constexpr int wr_pin = 26;
 static constexpr int addr_bits = 23; // all 24 on PGA board
 
 static uint32_t rom_addr;
@@ -118,7 +118,7 @@ static void dma_init() {
     channel_config_set_write_increment(&config, true);
     channel_config_set_transfer_data_size(&config, DMA_SIZE_16);
     channel_config_set_dreq(&config, pio_get_dreq(gba_cart_pio, rom_wr_sm, false));
-    dma_channel_configure(rom_write_dma_channel, &config, rom_ptr, &gba_cart_pio->rxf[rom_wr_sm], 0x10000, false);
+    //dma_channel_configure(rom_write_dma_channel, &config, rom_ptr, &gba_cart_pio->rxf[rom_wr_sm], 0x10000, false);
 
     // read address through sniffer to add base ptr
     // destination also used for write setup 

@@ -1,23 +1,23 @@
 .program gba_rom_cs
 
 ; reads address when ROM CS goes low
-; assumes CS = GPIO 26
+; assumes CS = GPIO 28
 .wrap_target
-    wait 0 pin 26
+    wait 0 pin 28
 
     in pins, 23 ; latch address
     wait 0 irq 0 ; wait for last transfer to abort
     in null, 1 ; x2 PIO style
 
-    wait 1 pin 26
+    wait 1 pin 28
     irq set 0
 .wrap
 
 ; switches pins to output and writes data when RD goes low
 .program gba_rom_rd
 .wrap_target
-    wait 0 pin 26 ; wait for CS
-    wait 0 pin 25 ; wait for RD
+    wait 0 pin 28 ; wait for CS
+    wait 0 pin 27 ; wait for RD
 
     ; data
     pull
@@ -27,7 +27,7 @@
     mov osr, ~null
     out pindirs, 16
 
-    wait 1 pin 25
+    wait 1 pin 27
 
     ; set input
     mov osr, null [4] ; waiting a little seems required
@@ -37,10 +37,10 @@
 ; reads when WR goes low
 .program gba_rom_wr
 .wrap_target
-    wait 0 pin 26 ; wait for CS
-    wait 0 pin 24 ; wait for WR
+    wait 0 pin 28 ; wait for CS
+    wait 0 pin 26 ; wait for WR
 
     in pins, 16
 
-    wait 1 pin 24
+    wait 1 pin 26
 .wrap

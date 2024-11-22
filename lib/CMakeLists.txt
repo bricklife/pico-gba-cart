@@ -1,32 +1,24 @@
+function(convert_bin2c input_file output_file c_var_name)
+  file(READ ${input_file} BIN_HEX HEX)
+  file(SIZE ${input_file} BIN_LEN)
 
-if(NOT DEFINED GBA_TOOLCHAIN_FILE)
-    message(FATAL_ERROR "Set GBA_TOOLCHAIN_FILE! (path to gba-toolchain/arm-gba-toolchain.cmake)")
-endif()
+  # Wrap lines per 16bytes
+  string(REPEAT ".." 16 REGEX_PAT)
+  string(REGEX REPLACE "(${REGEX_PAT})" "\\1\n" BIN_HEX_WRAP ${BIN_HEX})
+  string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1, " BIN_ARRAY ${BIN_HEX_WRAP})
 
-# build gba ROM
-include(ExternalProject)
-ExternalProject_Add(gba-rom-build
-    PREFIX gba
-    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../gba
-    BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/gba
+  # C format
+  set(C_H_INC "#include <stdint.h>")
+  set(C_H_DAT "static uint8_t ${c_var_name}[] = {\n${BIN_ARRAY}\n};")
 
-    CMAKE_ARGS "-DCMAKE_TOOLCHAIN_FILE=${GBA_TOOLCHAIN_FILE}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=${CMAKE_EXPORT_COMPILE_COMMANDS}
-    BUILD_ALWAYS TRUE
-    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/gba/gba-rom.gba
+  # Generate header
+  file(WRITE ${output_file} "${C_H_INC}\n\n${C_H_DAT}\n")
+endfunction()
 
-    INSTALL_COMMAND ""
-)
-
-add_custom_command(
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gba/
-    OUTPUT gba-rom.o
-    COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-littlearm -B armv6s-m --set-section-alignment .data=4 gba-rom.gba ${CMAKE_CURRENT_BINARY_DIR}/gba-rom.o
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gba/gba-rom.gba
-)
+convert_bin2c(${CMAKE_CURRENT_LIST_DIR}/../gba/rom.gba ${CMAKE_CURRENT_LIST_DIR}/rom.h _binary_gba_rom_gba_start)
 
 add_library(gbacart STATIC
     gbacart.cpp
-    gba-rom.o
 )
 
 target_link_libraries(gbacart pico_stdlib hardware_dma hardware_pio)
