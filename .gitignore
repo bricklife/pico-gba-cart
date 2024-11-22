@@ -1,1 +1,13 @@
-/build*
+.idea
+.vscode
+_deps
+cmake-*
+build
+build-*
+.DS_Store
+*.pdf
+/CMakeFiles
+/lib/CMakeFiles
+/pico-sdk
+/pioasm-install
+/pioasm
